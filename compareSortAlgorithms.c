@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 int extraMemoryAllocated;
 
@@ -28,36 +29,149 @@ size_t Size(void* ptr)
 
 // implements heap sort
 // extraMemoryAllocated counts bytes of memory allocated
+void makeHeap(int arr[], int n, int i)
+{
+    int largest = i;
+    int l = 2*i + 1;
+    int r = 2*i + 2;
+
+    if (l < n && arr[l] > arr[largest])
+        largest = l;
+
+    if (r < n && arr[r] > arr[largest])
+        largest = r;
+
+    if (largest != i)
+    {
+        int swap = arr[i];
+        arr[i] = arr[largest];
+        arr[largest] = swap;
+
+        makeHeap(arr, n, largest);
+    }
+}
+
 void heapSort(int arr[], int n)
 {
+    //build heap
+    for (int i = n / 2 - 1; i >= 0; i--)
+        makeHeap(arr, n, i);
+
+
+    for (int i=n-1; i>0; i--)
+    {
+        //move current root to end
+        int temp = arr[0];
+        arr[0] = arr[i];
+        arr[i] = temp;
+
+        //call max makeHeap on the reduced heap
+        makeHeap(arr, i, 0);
+    }
 }
+
 
 // implement merge sort
 // extraMemoryAllocated counts bytes of extra memory allocated
 void mergeSort(int pData[], int l, int r)
 {
-	
+	int m = (l + r) /2;
+	if(l < r) {
+		mergeSort(pData, l, m);
+		mergeSort(pData, m+1, r);
+		//merge section
+		int n1 = m-l +1;
+		int n2 = r-m;
+		void *sz = &pData[0];
+
+		int *L = Alloc(n1 * sizeof(int));
+		int *R = Alloc(n2 * sizeof(int));
+
+		// copy data into temp arrays
+		for(int i = 0; i < n1; i++) L[i] = pData[l + i];
+		for(int j = 0; j < n2; j++) R[j] = pData[m + 1 + j];
+
+		int i = 0; int j = 0; int current = l;
+
+		while (i < n1 && j < n2) {
+			if(L[i] <= R[j]) {
+				pData[current] = L[i];
+				i++;
+			} else {
+				pData[current] = R[j];
+				j++;
+			}
+			current++;
+		}
+
+		while (i < n1) {
+			pData[current] = L[i];
+			i++;
+			current++;
+		}
+
+		while (j < n2) {
+			pData[current] = R[j];
+			j++;
+			current++;
+		}
+		DeAlloc(L);
+		DeAlloc(R);
+	}
 }
 
 // implement insertion sort
 // extraMemoryAllocated counts bytes of memory allocated
 void insertionSort(int* pData, int n)
 {
-	
+	int i, j, key;
+
+	for(i = 1; i < n; i++) {
+		key = pData[i];
+		j = i-1;
+
+		while(j >= 0 && pData[j] > key) {
+			pData[j+1] = pData[j];
+			j = j-1;
+		}
+
+		pData[j+1] = key;
+
+	}
 }
 
 // implement bubble sort
 // extraMemoryAllocated counts bytes of extra memory allocated
 void bubbleSort(int* pData, int n)
 {
-	
+	int i, j;
+	for(i = 0; i < n-1; i++) {
+		for(j = 0; j < n - 1 - i; j++) {
+			if(pData[j] > pData[j+1]) {
+				int temp = pData[j];
+				pData[j] = pData[j+1];
+				pData[j+1] = temp;
+			}
+		}
+	}
 }
 
 // implement selection sort
 // extraMemoryAllocated counts bytes of extra memory allocated
 void selectionSort(int* pData, int n)
 {
-	
+	int i, j, minIdx;
+
+	for(i = 0; i < n-1; i++) {
+		minIdx = i;
+		for(j = i + 1; j < n; j++) {
+			if(pData[j] < pData[minIdx]) minIdx = j;
+
+			int temp = pData[minIdx];
+			pData[minIdx] = pData[i];
+			pData[i] = temp;
+		}
+	}
 }
 
 // parses input file to an integer array
@@ -72,6 +186,10 @@ int parseData(char *inputFileName, int **ppData)
 		fscanf(inFile,"%d\n",&dataSz);
 		*ppData = (int *)Alloc(sizeof(int) * dataSz);
 		// Implement parse data block
+		for(int i = 0; i < dataSz; i++)
+			fscanf(inFile, "%d", &((*ppData)[i]));
+		
+		fclose(inFile);
 	}
 	
 	return dataSz;
@@ -164,7 +282,7 @@ int main(void)
 		memcpy(pDataCopy, pDataSrc, dataSz*sizeof(int));
 		extraMemoryAllocated = 0;
 		start = clock();
-		heapSort(pDataCopy, 0, dataSz - 1);
+		heapSort(pDataCopy, /*0,*/ dataSz - 1);
 		end = clock();
 		cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 		printf("\truntime\t\t\t: %.1lf\n",cpu_time_used);
